@@ -40,36 +40,43 @@ namespace EchoServer
 
             Console.WriteLine($"Listening on all interfaces on port: {port}.");
 
-            while (true)
+            try
             {
-                Console.WriteLine("Waiting for a connection...");
-
-                using TcpClient client = await listener.AcceptTcpClientAsync();
-                Console.WriteLine($"Connected to: {client.Client.RemoteEndPoint}");
-
-                using NetworkStream stream = client.GetStream();
-
-                // send welcome message
-                byte[] welcome = Encoding.Default.GetBytes("Welcome to EchoServer.\r\n");
-                await stream.WriteAsync(welcome.AsMemory(0, welcome.Length));
-
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-
-                // loop to receive all data from client
-                while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) != 0)
+                while (true)
                 {
-                    string data = Encoding.Default.GetString(buffer, 0, bytesRead);
-                    Console.WriteLine($"Received {bytesRead} bytes: \"{data.ToControlCodeString()}\".");
+                    Console.WriteLine("Waiting for a connection...");
 
-                    byte[] response = Encoding.Default.GetBytes(data);
-                    await stream.WriteAsync(response.AsMemory(0, response.Length));
-                    Console.WriteLine("Sent response.");
+                    using TcpClient client = await listener.AcceptTcpClientAsync();
+                    Console.WriteLine($"Connected to: {client.Client.RemoteEndPoint}");
+
+                    using NetworkStream stream = client.GetStream();
+
+                    // send welcome message
+                    byte[] welcome = Encoding.Default.GetBytes("Welcome to EchoServer.\r\n");
+                    await stream.WriteAsync(welcome.AsMemory(0, welcome.Length));
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+
+                    // loop to receive all data from client
+                    while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) != 0)
+                    {
+                        string data = Encoding.Default.GetString(buffer, 0, bytesRead);
+                        Console.WriteLine($"Received {bytesRead} bytes: \"{data.ToControlCodeString()}\".");
+
+                        byte[] response = Encoding.Default.GetBytes(data);
+                        await stream.WriteAsync(response.AsMemory(0, response.Length));
+                        Console.WriteLine("Sent response.");
+                    }
+
+                    // end connection
+                    Console.WriteLine("Closing connection.");
+                    client.Close();
                 }
-
-                // end connection
-                Console.WriteLine("Closing connection.");
-                client.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception caught: {ex.Message}");
             }
         }
     }
